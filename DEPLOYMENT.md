@@ -14,6 +14,7 @@
 ```bash
 git clone https://github.com/bashirmohammedatiwi-ops/rybella-app.git
 cd rybella-app
+# أو إذا كان داخل مجلد: cd rybella-app/rybella-app
 ```
 
 ### 2. إعداد ملف البيئة
@@ -23,12 +24,12 @@ cp .env.docker.example .env
 nano .env
 ```
 
-**عدّل القيم:**
-- `APP_URL`: مثلاً `http://187.124.23.65:3307`
-- `DB_PASSWORD`: كلمة مرور قوية
-- `DB_ROOT_PASSWORD`: كلمة مرور جذر MySQL
-- `APP_PORT`: 3307 (لوحة التحكم والـ API)
-- **مهم:** لا تغيّر `DB_PORT=3306` - مطلوب للاتصال الداخلي بقاعدة البيانات
+**عدّل القيم (مهم جداً):**
+- `APP_URL`: `http://عنوان_السيرفر:3307` (مثلاً `http://187.124.23.65:3307`)
+- `DB_PASSWORD`: كلمة مرور قوية (غيّر من CHANGE_THIS_STRONG_PASSWORD)
+- `DB_ROOT_PASSWORD`: كلمة مرور جذر قوية (غيّر من CHANGE_ROOT_PASSWORD)
+- `APP_PORT`: 3307
+- لا تغيّر `DB_HOST=db` أو `DB_PORT=3306` - للاتصال الداخلي داخل Docker
 
 ### 3. تشغيل النشر
 
@@ -57,7 +58,7 @@ docker compose exec app php artisan db:seed --class=AdminSeeder
 
 ### 4. لوحة التحكم
 
-- **الرابط:** `http://YOUR_VPS_IP:8080/admin/login`
+- **الرابط:** `http://YOUR_VPS_IP:3307/admin/login`
 - **البريد الافتراضي:** admin@rybella.com
 - **كلمة المرور:** Admin@123  
   (غيّرها فوراً بعد أول تسجيل دخول)
@@ -67,6 +68,18 @@ docker compose exec app php artisan db:seed --class=AdminSeeder
 ```bash
 cd mobile_app
 flutter build apk --dart-define=API_BASE_URL=http://YOUR_VPS_IP:3307/api/v1
+```
+
+---
+
+## تحديث المشروع (بعد git pull)
+
+```bash
+cd rybella-app   # أو المسار الذي تستخدمه
+git pull
+docker compose up -d --build
+docker compose exec app php artisan migrate --force
+docker compose exec app php artisan config:cache
 ```
 
 ---
@@ -121,3 +134,11 @@ docker compose exec app php artisan storage:link
 - تأكد أن `APP_URL` في `.env` يطابق رابط الدخول (مثلاً `http://187.124.23.65:3307`)
 - تأكد أن `SESSION_SECURE_COOKIE=false` (للاتصال عبر HTTP)
 - مسح الكاش: `docker compose exec app php artisan config:clear`
+
+**خطأ Access denied لقاعدة البيانات:**
+- تأكد أن `DB_PASSWORD` و `DB_ROOT_PASSWORD` في `.env` تم تغييرهما (ليس القيم الافتراضية)
+- إذا غيّرت كلمات المرور بعد أول تشغيل، استخدم إعادة تهيئة كاملة:
+  ```bash
+  chmod +x scripts/fresh-db.sh
+  ./scripts/fresh-db.sh
+  ```
