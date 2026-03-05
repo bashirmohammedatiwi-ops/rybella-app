@@ -26,6 +26,7 @@ echo "Setting up Laravel..."
 docker compose exec -T app php artisan key:generate --force 2>/dev/null || true
 docker compose exec -T app php artisan storage:link 2>/dev/null || true
 docker compose exec -T app php artisan migrate --force
+docker compose exec -T app php artisan db:seed --class=AdminSeeder 2>/dev/null || true
 
 echo ""
 echo "Deployment complete!"

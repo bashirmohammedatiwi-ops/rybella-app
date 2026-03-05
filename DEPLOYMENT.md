@@ -20,54 +20,53 @@ cd rybella-app
 
 ```bash
 cp .env.docker.example .env
-nano .env   # أو استخدم vim/vi
+nano .env
 ```
 
-**عدّل القيم المهمة:**
-- `APP_URL`: رابط الـ API (مثال: `http://YOUR_IP:8080` أو `https://api.rybella.com`)
-- `DB_PASSWORD`: كلمة مرور قوية لقاعدة البيانات
+**عدّل القيم:**
+- `APP_URL`: مثلاً `http://187.124.23.65:8080`
+- `DB_PASSWORD`: كلمة مرور قوية
 - `DB_ROOT_PASSWORD`: كلمة مرور جذر MySQL
-- `APP_PORT`: المنفذ (الافتراضي 8080 - غيّره إن كان مستخدماً بمشروع آخر)
+- `APP_PORT`: 8080 (أو غيره إن كان مستخدماً)
+- **مهم:** لا تغيّر `DB_PORT=3306` - مطلوب للاتصال الداخلي بقاعدة البيانات
 
 ### 3. تشغيل النشر
 
-**على Linux/Mac:**
 ```bash
 chmod +x deploy.sh
 ./deploy.sh
 ```
 
-**يدوياً:**
+**أو يدوياً:**
 ```bash
-# تثبيت اعتماديات PHP
-docker run --rm -v $(pwd)/backend:/app -w /app composer:2 install --no-dev --optimize-autoloader
+# تثبيت الاعتماديات (إن لم تكن موجودة)
+docker run --rm -v $(pwd)/backend:/app -w /app php:8.1-cli sh -c "apt-get update -qq && apt-get install -y -qq zip unzip git && curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer && composer install --no-dev --optimize-autoloader --no-interaction"
 
 # تشغيل الحاويات
 docker compose up -d --build
 
-# بعد 15–20 ثانية: إعداد Laravel
+# انتظار 20 ثانية ثم إعداد Laravel
+sleep 20
 docker compose exec app php artisan key:generate --force
 docker compose exec app php artisan storage:link
 docker compose exec app php artisan migrate --force
+
+# إنشاء مستخدم مدير للوحة التحكم
+docker compose exec app php artisan db:seed --class=AdminSeeder
 ```
 
-### 4. تحديث تطبيق Flutter للربط مع الـ API
+### 4. لوحة التحكم
 
-عدّل `mobile_app/lib/core/constants/api_constants.dart` وضَع رابط الـ API:
+- **الرابط:** `http://YOUR_VPS_IP:8080/admin/login`
+- **البريد الافتراضي:** admin@rybella.com
+- **كلمة المرور:** Admin@123  
+  (غيّرها فوراً بعد أول تسجيل دخول)
 
-```dart
-// للإنتاج
-static String get baseUrl => 'https://YOUR_DOMAIN:8080/api/v1';
-// أو باستخدام عنوان IP
-static String get baseUrl => 'http://YOUR_VPS_IP:8080/api/v1';
-```
+### 5. تطبيق Flutter للإنتاج
 
-ثم أعد بناء التطبيق:
 ```bash
 cd mobile_app
-flutter build apk    # لأندرويد
-flutter build ios    # لـ iOS
-flutter build web   # للويب
+flutter build apk --dart-define=API_BASE_URL=http://YOUR_VPS_IP:8080/api/v1
 ```
 
 ---
@@ -104,9 +103,9 @@ docker compose exec app php artisan tinker
 
 ## استكشاف الأخطاء
 
-**خطأ في الاتصال بقاعدة البيانات:**
-- تأكد من صحة `DB_PASSWORD` و `DB_ROOT_PASSWORD` في `.env`
-- انتظر 30 ثانية بعد التشغيل ثم أعد المحاولة
+**خطأ Connection refused لقاعدة البيانات:**
+- تأكد أن `DB_PORT=3306` في `.env` (للاتصال الداخلي داخل Docker)
+- لا تستخدم 3307 للـ app - هذا منفذ الوصول من المضيف فقط
 
 **الصور لا تظهر:**
 ```bash
