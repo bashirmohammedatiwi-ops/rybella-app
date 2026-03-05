@@ -38,6 +38,8 @@ chmod +x deploy.sh
 ./deploy.sh
 ```
 
+**ملاحظة:** التطبيق يستخدم `backend` من المضيف مباشرة (بدون نسخ داخل الصورة)، لذا تأكد من وجود `backend/vendor` قبل التشغيل (السكربت يثبته تلقائياً).
+
 **أو يدوياً:**
 ```bash
 # تثبيت الاعتماديات (إن لم تكن موجودة)
@@ -136,8 +138,8 @@ docker compose exec app php artisan storage:link
 - مسح الكاش: `docker compose exec app php artisan config:clear`
 
 **خطأ Access denied لقاعدة البيانات:**
-- تأكد أن `DB_PASSWORD` و `DB_ROOT_PASSWORD` في `.env` تم تغييرهما (ليس القيم الافتراضية)
-- إذا غيّرت كلمات المرور بعد أول تشغيل، استخدم إعادة تهيئة كاملة:
+- تأكد أن `DB_PASSWORD` و `DB_ROOT_PASSWORD` في `.env` تم تغييرهما
+- استخدم إعادة تهيئة كاملة:
   ```bash
   chmod +x scripts/fresh-db.sh
   ./scripts/fresh-db.sh

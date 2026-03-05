@@ -1,77 +1,78 @@
 #!/bin/bash
-# Rybella Deployment Script
+# Rybella - سكربت النشر
 set -e
+
+cd "$(dirname "$0")"
 
 echo "=== Rybella Deployment ==="
 
-# التحقق من وجود .env
+# 1. التحقق من .env
 if [ ! -f .env ]; then
-    echo "Creating .env from template..."
     cp .env.docker.example .env
     echo ""
-    echo "⚠️  عدّل ملف .env وأدخل كلمات المرور الصحيحة قبل المتابعة!"
+    echo "⚠️  عدّل .env ثم شغّل ./deploy.sh مرة أخرى"
     echo "   nano .env"
     echo ""
     exit 1
 fi
 
-# التحقق من تعديل كلمات المرور (لا تستخدم القيم الافتراضية)
-if grep -q "CHANGE_THIS_STRONG_PASSWORD" .env 2>/dev/null || grep -q "CHANGE_ROOT_PASSWORD" .env 2>/dev/null; then
-    echo "❌ عدّل كلمات المرور في .env قبل النشر:"
-    echo "   DB_PASSWORD=كلمة_مرور_قوية"
-    echo "   DB_ROOT_PASSWORD=كلمة_مرور_جذر_قوية"
-    echo ""
+if grep -q "CHANGE_THIS_STRONG_PASSWORD\|CHANGE_ROOT_PASSWORD" .env 2>/dev/null; then
+    echo "❌ غيّر DB_PASSWORD و DB_ROOT_PASSWORD في .env"
     exit 1
 fi
 
-# تثبيت Composer إن لزم
+# 2. Composer (مطلوب قبل تشغيل الحاويات)
 if [ ! -d backend/vendor ]; then
-    echo "Installing Composer dependencies..."
-    docker run --rm -v "$(pwd)/backend:/app" -w /app php:8.1-cli sh -c "curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer && composer install --no-dev --optimize-autoloader --no-interaction"
+    echo ">>> Installing Composer dependencies..."
+    docker run --rm -v "$(pwd)/backend:/app" -w /app php:8.1-cli sh -c "\
+        curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer && \
+        composer install --no-dev --optimize-autoloader --no-interaction"
 fi
 
-echo "Starting Docker containers..."
-docker compose up -d --build
+# 3. مجلدات التخزين
+mkdir -p backend/storage/app/public \
+         backend/storage/framework/{sessions,views,cache} \
+         backend/storage/logs \
+         backend/bootstrap/cache
 
-echo "Waiting for MySQL (up to 90 seconds)..."
+# 4. إيقاف الحاويات القديمة وإعادة البناء
+echo ">>> Building and starting containers..."
+docker compose down 2>/dev/null || true
+docker compose build --no-cache app 2>/dev/null || true
+docker compose up -d
+
+# 5. انتظار MySQL
+echo ">>> Waiting for MySQL (up to 90s)..."
 for i in $(seq 1 30); do
-    if docker compose exec -T db sh -c 'mysqladmin ping -h localhost -uroot -p"$MYSQL_ROOT_PASSWORD" 2>/dev/null'; then
-        echo "MySQL is ready."
+    if docker compose exec -T db sh -c 'mysqladmin ping -h localhost -uroot -p"$MYSQL_ROOT_PASSWORD" 2>/dev/null' 2>/dev/null; then
+        echo "MySQL ready."
         break
     fi
-    if [ $i -eq 30 ]; then
-        echo "❌ MySQL did not start in time. Check: docker compose logs db"
-        exit 1
-    fi
+    [ $i -eq 30 ] && { echo "❌ MySQL timeout"; exit 1; }
     sleep 3
 done
 
-echo "Setting up Laravel..."
+# 6. إعداد Laravel
+echo ">>> Setting up Laravel..."
 docker compose exec -T app php artisan config:clear
 docker compose exec -T app php artisan key:generate --force 2>/dev/null || true
-# إنشاء رابط التخزين في مجلد backend على المضيف (للـ nginx لخدمة الصور)
-docker run --rm -v "$(pwd)/backend:/var/www/html" -v "$(pwd)/.env:/var/www/html/.env:ro" -w /var/www/html php:8.1-cli php artisan storage:link 2>/dev/null || true
-
-# صلاحيات التخزين
+docker compose exec -T app php artisan storage:link 2>/dev/null || true
 docker compose exec -T app chmod -R 775 storage bootstrap/cache 2>/dev/null || true
 
-# Migration مع إعادة المحاولة
+# 7. Migration
 for i in $(seq 1 5); do
-    if docker compose exec -T app php artisan migrate --force; then
-        break
-    fi
-    echo "Migration attempt $i failed, retrying in 5s..."
+    docker compose exec -T app php artisan migrate --force && break
+    echo "Retry $i/5 in 5s..."
     sleep 5
 done
 
 docker compose exec -T app php artisan db:seed --class=AdminSeeder 2>/dev/null || true
 docker compose exec -T app php artisan config:cache
 
-# قراءة المنفذ من .env
+# 8. النتيجة
 APP_PORT=$(grep -E "^APP_PORT=" .env 2>/dev/null | cut -d= -f2 || echo "3307")
-
 echo ""
-echo "✅ Deployment complete!"
-echo "   Admin: http://YOUR_VPS_IP:${APP_PORT}/admin/login"
+echo "✅ Done!"
+echo "   Admin: http://YOUR_IP:${APP_PORT}/admin/login"
 echo "   Login: admin@rybella.com / Admin@123"
 echo ""
