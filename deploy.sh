@@ -49,7 +49,8 @@ done
 echo "Setting up Laravel..."
 docker compose exec -T app php artisan config:clear
 docker compose exec -T app php artisan key:generate --force 2>/dev/null || true
-docker compose exec -T app php artisan storage:link 2>/dev/null || true
+# إنشاء رابط التخزين في مجلد backend على المضيف (للـ nginx لخدمة الصور)
+docker run --rm -v "$(pwd)/backend:/var/www/html" -v "$(pwd)/.env:/var/www/html/.env:ro" -w /var/www/html php:8.1-cli php artisan storage:link 2>/dev/null || true
 
 # صلاحيات التخزين
 docker compose exec -T app chmod -R 775 storage bootstrap/cache 2>/dev/null || true
