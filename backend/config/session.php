@@ -13,7 +13,7 @@ return [
     'cookie' => env('SESSION_COOKIE', 'cosmatic_session'),
     'path' => '/',
     'domain' => null,
-    'secure' => env('SESSION_SECURE_COOKIE'),
+    'secure' => env('SESSION_SECURE_COOKIE', false),
     'http_only' => true,
     'same_site' => 'lax',
 ];

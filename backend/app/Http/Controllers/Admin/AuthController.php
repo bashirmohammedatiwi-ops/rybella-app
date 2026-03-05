@@ -27,7 +27,8 @@ class AuthController extends Controller
             throw ValidationException::withMessages(['email' => ['بيانات الدخول غير صحيحة.']]);
         }
 
-        session(['admin_id' => $admin->id]);
+        $request->session()->put('admin_id', $admin->id);
+        $request->session()->save();
         return redirect()->route('admin.dashboard');
     }
 
