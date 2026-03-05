@@ -7,9 +7,8 @@ services:
     restart: unless-stopped
     working_dir: /var/www/html
     volumes:
-      # للتطوير: أزل التعليق عن السطر التالي وعلّق على storage فقط
-      # - ./backend:/var/www/html
-      - rybella_storage:/var/www/html/storage
+      - ./.env:/var/www/html/.env
+      - ./backend/storage:/var/www/html/storage
     environment:
       - APP_ENV=production
       - APP_DEBUG=false
@@ -57,4 +56,3 @@ services:
 
 volumes:
   rybella_db_data:
-  rybella_storage:
