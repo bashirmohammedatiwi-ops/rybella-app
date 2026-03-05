@@ -2,6 +2,13 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'dart:io' show Platform;
 
 class ApiConstants {
+  /// للإنتاج: ضع الرابط عند البناء
+  /// flutter build apk --dart-define=API_BASE_URL=https://api.example.com/api/v1
+  static const String _productionUrl = String.fromEnvironment(
+    'API_BASE_URL',
+    defaultValue: '',
+  );
+
   /// غيّر إلى true عند التشغيل على هاتف فعلي (يحتاج نفس الـ Wi-Fi)
   static const bool _usePhysicalDevice = false;
 
@@ -16,7 +23,9 @@ class ApiConstants {
     return _hostIpLocal;
   }
 
-  static String get baseUrl => 'http://$_hostIp:8000/api/v1';
+  static String get baseUrl => _productionUrl.isNotEmpty
+      ? _productionUrl
+      : 'http://$_hostIp:8000/api/v1';
 
   static String get storageBase =>
       baseUrl.replaceFirst(RegExp(r'/api/v1.*'), '');

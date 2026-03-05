@@ -22,6 +22,10 @@ backend/bootstrap/cache/*
 # Flutter build (mobile_app has its own .gitignore)
 mobile_app/build/
 
+# Docker
+.env
+!.env.docker.example
+
 # OS
 .DS_Store
 Thumbs.db

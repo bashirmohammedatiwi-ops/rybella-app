@@ -63,7 +63,7 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
       body: Container(
         decoration: const BoxDecoration(gradient: AppColors.heroGradient),
         child: _loading
-            ? const Center(child: CircularProgressIndicator(color: AppColors.terracotta))
+            ? Center(child: CircularProgressIndicator(color: AppColors.terracotta))
             : _orders.isEmpty
                 ? Center(
                     child: Column(
