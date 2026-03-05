@@ -13,7 +13,7 @@ fi
 
 if [ ! -d backend/vendor ]; then
     echo "Installing Composer dependencies..."
-    docker run --rm -v "$(pwd)/backend:/app" -w /app composer:2 install --no-dev --optimize-autoloader --no-interaction
+    docker run --rm -v "$(pwd)/backend:/app" -w /app php:8.1-cli sh -c "curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer && composer install --no-dev --optimize-autoloader --no-interaction"
 fi
 
 echo "Starting Docker..."

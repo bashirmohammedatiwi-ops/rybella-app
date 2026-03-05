@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   app:
     build:
@@ -59,3 +57,4 @@ services:
 
 volumes:
   rybella_db_data:
+  rybella_storage:
