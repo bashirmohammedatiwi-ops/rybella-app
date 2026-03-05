@@ -24,10 +24,10 @@ nano .env
 ```
 
 **عدّل القيم:**
-- `APP_URL`: مثلاً `http://187.124.23.65:8080`
+- `APP_URL`: مثلاً `http://187.124.23.65:3307`
 - `DB_PASSWORD`: كلمة مرور قوية
 - `DB_ROOT_PASSWORD`: كلمة مرور جذر MySQL
-- `APP_PORT`: 8080 (أو غيره إن كان مستخدماً)
+- `APP_PORT`: 3307 (لوحة التحكم والـ API)
 - **مهم:** لا تغيّر `DB_PORT=3306` - مطلوب للاتصال الداخلي بقاعدة البيانات
 
 ### 3. تشغيل النشر
@@ -66,7 +66,7 @@ docker compose exec app php artisan db:seed --class=AdminSeeder
 
 ```bash
 cd mobile_app
-flutter build apk --dart-define=API_BASE_URL=http://YOUR_VPS_IP:8080/api/v1
+flutter build apk --dart-define=API_BASE_URL=http://YOUR_VPS_IP:3307/api/v1
 ```
 
 ---
@@ -96,7 +96,7 @@ docker compose exec app php artisan tinker
 
 | المشروع   | APP_PORT | DB_PORT |
 |-----------|----------|---------|
-| Rybella   | 8080     | 3307    |
+| Rybella   | 3307     | 3308    |
 | مشروع آخر | 80 أو 8081 | 3306  |
 
 ---
@@ -115,3 +115,9 @@ docker compose exec app php artisan storage:link
 **502 Bad Gateway:**
 - تحقق من عمل حاوية `app`: `docker compose ps`
 - راجع السجلات: `docker compose logs app`
+
+**خطأ 500 بعد تسجيل الدخول:**
+- راجع سجل Laravel: `docker compose exec app tail -100 storage/logs/laravel.log`
+- تأكد أن `APP_URL` في `.env` يطابق رابط الدخول (مثلاً `http://187.124.23.65:3307`)
+- تأكد أن `SESSION_SECURE_COOKIE=false` (للاتصال عبر HTTP)
+- مسح الكاش: `docker compose exec app php artisan config:clear`

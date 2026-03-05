@@ -23,11 +23,13 @@ echo "Waiting for database..."
 sleep 15
 
 echo "Setting up Laravel..."
+docker compose exec -T app php artisan config:clear
 docker compose exec -T app php artisan key:generate --force 2>/dev/null || true
 docker compose exec -T app php artisan storage:link 2>/dev/null || true
 docker compose exec -T app php artisan migrate --force
 docker compose exec -T app php artisan db:seed --class=AdminSeeder 2>/dev/null || true
+docker compose exec -T app php artisan config:cache
 
 echo ""
 echo "Deployment complete!"
-echo "API: http://localhost:${APP_PORT:-8080}"
+echo "Admin: http://YOUR_VPS_IP:${APP_PORT:-3307}/admin/login"
