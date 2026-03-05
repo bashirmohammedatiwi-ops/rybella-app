@@ -1,0 +1,28 @@
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# Laravel / PHP
+backend/vendor/
+backend/node_modules/
+backend/.env
+backend/storage/logs/*
+backend/storage/framework/sessions/*
+backend/storage/framework/views/*
+backend/storage/framework/cache/*
+backend/bootstrap/cache/*
+!backend/storage/logs/.gitignore
+!backend/storage/framework/sessions/.gitignore
+!backend/storage/framework/views/.gitignore
+!backend/storage/framework/cache/.gitignore
+!backend/bootstrap/cache/.gitignore
+!backend/storage/app/.gitignore
+
+# Flutter build (mobile_app has its own .gitignore)
+mobile_app/build/
+
+# OS
+.DS_Store
+Thumbs.db
+*.log
