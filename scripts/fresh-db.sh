@@ -14,7 +14,7 @@ echo "Stopping containers..."
 docker compose down
 
 echo "Removing MySQL volume..."
-for vol in $(docker volume ls -q | grep rybella_db_data); do docker volume rm "$vol"; done 2>/dev/null || true
+for v in $(docker volume ls -q | grep rybella_db_data); do docker volume rm "$v"; done 2>/dev/null || true
 
 echo "Starting fresh..."
 docker compose up -d
@@ -23,6 +23,6 @@ sleep 45
 
 echo "Running migrations..."
 docker compose exec -T app php artisan migrate --force
-docker compose exec -T app php artisan db:seed --class=AdminSeeder
+docker compose exec -T app php artisan db:seed --class=AdminSeeder --force
 
 echo "✅ Done! admin@rybella.com / Admin@123"

@@ -1,9 +1,9 @@
-# دليل النشر على VPS - Rybella
+# دليل النشر - Rybella
 
 ## المتطلبات
 
-- Docker و Docker Compose على الـ VPS
-- Git (لنسخ المشروع)
+- Docker و Docker Compose
+- Git
 
 ---
 
@@ -14,70 +14,54 @@
 ```bash
 git clone https://github.com/bashirmohammedatiwi-ops/rybella-app.git
 cd rybella-app
-# أو إذا كان داخل مجلد: cd rybella-app/rybella-app
 ```
 
-### 2. إعداد ملف البيئة
+### 2. إعداد .env
 
 ```bash
 cp .env.docker.example .env
 nano .env
 ```
 
-**عدّل القيم (مهم جداً):**
-- `APP_URL`: `http://عنوان_السيرفر:3307` (مثلاً `http://187.124.23.65:3307`)
-- `DB_PASSWORD`: كلمة مرور قوية (غيّر من CHANGE_THIS_STRONG_PASSWORD)
-- `DB_ROOT_PASSWORD`: كلمة مرور جذر قوية (غيّر من CHANGE_ROOT_PASSWORD)
-- `APP_PORT`: 3307
-- لا تغيّر `DB_HOST=db` أو `DB_PORT=3306` - للاتصال الداخلي داخل Docker
+**عدّل:**
+- `APP_URL`: `http://عنوان_السيرفر:8080` (مثلاً `http://187.124.23.65:8080`)
+- `DB_PASSWORD`: كلمة مرور قوية
+- `DB_ROOT_PASSWORD`: كلمة مرور جذر قوية
 
-### 3. تشغيل النشر
+### 3. النشر
 
 ```bash
 chmod +x deploy.sh
 ./deploy.sh
 ```
 
-**ملاحظة:** التطبيق يستخدم `backend` من المضيف مباشرة (بدون نسخ داخل الصورة)، لذا تأكد من وجود `backend/vendor` قبل التشغيل (السكربت يثبته تلقائياً).
-
-**أو يدوياً:**
-```bash
-# تثبيت الاعتماديات (إن لم تكن موجودة)
-docker run --rm -v $(pwd)/backend:/app -w /app php:8.1-cli sh -c "apt-get update -qq && apt-get install -y -qq zip unzip git && curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer && composer install --no-dev --optimize-autoloader --no-interaction"
-
-# تشغيل الحاويات
-docker compose up -d --build
-
-# انتظار 20 ثانية ثم إعداد Laravel
-sleep 20
-docker compose exec app php artisan key:generate --force
-docker compose exec app php artisan storage:link
-docker compose exec app php artisan migrate --force
-
-# إنشاء مستخدم مدير للوحة التحكم
-docker compose exec app php artisan db:seed --class=AdminSeeder
-```
-
 ### 4. لوحة التحكم
 
-- **الرابط:** `http://YOUR_VPS_IP:3307/admin/login`
-- **البريد الافتراضي:** admin@rybella.com
-- **كلمة المرور:** Admin@123  
-  (غيّرها فوراً بعد أول تسجيل دخول)
+- **الرابط:** `http://YOUR_IP:8080/admin/login`
+- **البريد:** admin@rybella.com
+- **كلمة المرور:** Admin@123
 
-### 5. تطبيق Flutter للإنتاج
+### 5. بناء Flutter
 
 ```bash
 cd mobile_app
-flutter build apk --dart-define=API_BASE_URL=http://YOUR_VPS_IP:3307/api/v1
+flutter build apk --dart-define=API_BASE_URL=http://YOUR_IP:8080/api/v1
 ```
 
 ---
 
-## تحديث المشروع (بعد git pull)
+## المنافذ
+
+| الخدمة | المنفذ |
+|--------|--------|
+| لوحة التحكم + API | 8080 |
+| MySQL (من المضيف) | 3307 |
+
+---
+
+## تحديث المشروع
 
 ```bash
-cd rybella-app   # أو المسار الذي تستخدمه
 git pull
 docker compose up -d --build
 docker compose exec app php artisan migrate --force
@@ -86,61 +70,27 @@ docker compose exec app php artisan config:cache
 
 ---
 
-## أوامر مفيدة
+## إعادة تهيئة قاعدة البيانات
 
 ```bash
-# إيقاف المشروع
-docker compose down
-
-# عرض السجلات
-docker compose logs -f app
-
-# تشغيل migrations جديدة
-docker compose exec app php artisan migrate
-
-# إنشاء مستخدم مدير
-docker compose exec app php artisan tinker
-# ثم: \App\Models\AdminUser::create([...]);
+chmod +x scripts/fresh-db.sh
+./scripts/fresh-db.sh
 ```
-
----
-
-## تشغيل أكثر من مشروع
-
-على نفس الـ VPS، استخدم منافذ مختلفة:
-
-| المشروع   | APP_PORT | DB_PORT |
-|-----------|----------|---------|
-| Rybella   | 3307     | 3308    |
-| مشروع آخر | 80 أو 8081 | 3306  |
 
 ---
 
 ## استكشاف الأخطاء
 
-**خطأ Connection refused لقاعدة البيانات:**
-- تأكد أن `DB_PORT=3306` في `.env` (للاتصال الداخلي داخل Docker)
-- لا تستخدم 3307 للـ app - هذا منفذ الوصول من المضيف فقط
+**خطأ Access denied:**
+- غيّر `DB_PASSWORD` و `DB_ROOT_PASSWORD` في `.env`
+- أو استخدم `./scripts/fresh-db.sh`
 
-**الصور لا تظهر:**
+**خطأ 500 / لا يظهر شيء:**
+- `docker compose exec app tail -50 storage/logs/laravel.log`
+- تأكد `APP_URL` يطابق رابط الدخول
+- تأكد `SESSION_SECURE_COOKIE=false`
+
+**vendor غير موجود:**
 ```bash
-docker compose exec app php artisan storage:link
+docker run --rm -v "$(pwd)/backend:/app" -w /app php:8.1-cli sh -c "apt-get update -qq && apt-get install -y -qq zip unzip git && curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer && composer install --no-dev --optimize-autoloader --no-interaction"
 ```
-
-**502 Bad Gateway:**
-- تحقق من عمل حاوية `app`: `docker compose ps`
-- راجع السجلات: `docker compose logs app`
-
-**خطأ 500 بعد تسجيل الدخول:**
-- راجع سجل Laravel: `docker compose exec app tail -100 storage/logs/laravel.log`
-- تأكد أن `APP_URL` في `.env` يطابق رابط الدخول (مثلاً `http://187.124.23.65:3307`)
-- تأكد أن `SESSION_SECURE_COOKIE=false` (للاتصال عبر HTTP)
-- مسح الكاش: `docker compose exec app php artisan config:clear`
-
-**خطأ Access denied لقاعدة البيانات:**
-- تأكد أن `DB_PASSWORD` و `DB_ROOT_PASSWORD` في `.env` تم تغييرهما
-- استخدم إعادة تهيئة كاملة:
-  ```bash
-  chmod +x scripts/fresh-db.sh
-  ./scripts/fresh-db.sh
-  ```
